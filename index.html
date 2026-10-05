@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="MoneySave">
+<meta name="theme-color" content="#090014">
+<link rel="manifest" href="manifest.json">
+<title>MoneySave — Expense Tracker</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app">
+  <header>
+    <div>
+      <div class="eyebrow">PERSONAL FINANCE</div>
+      <h1>Money<span>Save</span> 💰</h1>
+      <p>Simple money tracking made for your iPhone.</p>
+    </div>
+    <button id="themeBtn" class="iconBtn" aria-label="Toggle theme">☀️</button>
+  </header>
+
+  <section class="cards">
+    <div class="card balance"><small>NET BALANCE</small><strong id="balance">₹0</strong></div>
+    <div class="card income"><small>INCOME</small><strong id="incomeTotal">₹0</strong></div>
+    <div class="card expense"><small>EXPENSE</small><strong id="expenseTotal">₹0</strong></div>
+  </section>
+
+  <section class="panel">
+    <h2>Add Transaction</h2>
+    <div class="seg">
+      <button class="type active" data-type="expense">Expense</button>
+      <button class="type" data-type="income">Income</button>
+    </div>
+    <input id="amount" type="number" inputmode="decimal" placeholder="Amount ₹">
+    <div class="grid">
+      <input id="date" type="date">
+      <select id="category">
+        <option>Food</option><option>Travel</option><option>Shopping</option>
+        <option>Bills</option><option>Education</option><option>Health</option>
+        <option>Salary</option><option>Other</option>
+      </select>
+    </div>
+    <input id="note" maxlength="60" placeholder="Note (optional)">
+    <button id="addBtn" class="primary">＋ Add Transaction</button>
+  </section>
+
+  <section class="panel">
+    <div class="row"><h2>Summary</h2><span id="monthLabel"></span></div>
+    <div class="mini">
+      <div><span>This Week</span><b id="week">₹0</b></div>
+      <div><span>This Month</span><b id="month">₹0</b></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="row"><h2>Transactions</h2><button id="clearBtn" class="dangerText">Clear all</button></div>
+    <div id="list" class="list"><div class="empty">No transactions yet.</div></div>
+  </section>
+
+  <div class="tip">🔒 Your data stays on this iPhone/browser. No account or laptop required.</div>
+</div>
+<script src="script.js"></script>
+</body>
+</html>
