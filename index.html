@@ -1,9 +1,13 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+
+<meta name="viewport"
+content="width=device-width, initial-scale=1, maximum-scale=1">
+
 <meta name="apple-mobile-web-app-capable" content="yes">
+
 <link rel="manifest" href="manifest.json">
 
 <title>MoneySave</title>
@@ -22,33 +26,33 @@
     <p>Income • Expense • Daily Savings</p>
   </div>
 
-  <button onclick="theme()">☀️</button>
+  <button class="themeBtn" onclick="theme()">☀️</button>
 </header>
 
 
-<!-- DASHBOARD CARDS -->
+<!-- DASHBOARD -->
 
 <section class="cards">
 
-  <button onclick="metric('balance')">
+  <button class="card balance" onclick="metric('balance')">
     <span>💰 Net Balance</span>
     <b id="net">₹0</b>
     <i>Tap for summary</i>
   </button>
 
-  <button onclick="metric('income')">
+  <button class="card incomeCard" onclick="metric('income')">
     <span>📈 Income</span>
     <b id="income">₹0</b>
     <i>Tap for details</i>
   </button>
 
-  <button onclick="metric('expense')">
+  <button class="card expenseCard" onclick="metric('expense')">
     <span>💸 Expense</span>
     <b id="expense">₹0</b>
     <i>Tap for details</i>
   </button>
 
-  <button onclick="metric('saving')">
+  <button class="card savingCard" onclick="metric('saving')">
     <span>🏦 Daily Savings</span>
     <b id="saving">₹0</b>
     <i id="todayLabel">Today</i>
@@ -83,6 +87,7 @@ Expense
 
 <label>
 Amount
+
 <input
 id="amount"
 type="number"
@@ -93,6 +98,7 @@ placeholder="₹ 0">
 
 <label>
 Date
+
 <input
 id="date"
 type="date">
@@ -132,9 +138,7 @@ placeholder="Optional">
 </div>
 
 
-<button
-class="add"
-onclick="add()">
+<button class="add" onclick="add()">
 Add Transaction
 </button>
 
@@ -159,7 +163,7 @@ onchange="render()">
 </section>
 
 
-<!-- SUMMARY -->
+<!-- SUMMARIES -->
 
 <section>
 
@@ -184,7 +188,6 @@ Monthly
 </button>
 
 </div>
-
 
 <div id="summary"></div>
 
@@ -214,11 +217,11 @@ Clear All
 </main>
 
 
-<!-- DETAILS POPUP -->
+<!-- POPUP MODAL -->
 
 <div
 id="modal"
-class="modal"
+class="modal hide"
 onclick="if(event.target===this)closeM()">
 
 <div class="box">
