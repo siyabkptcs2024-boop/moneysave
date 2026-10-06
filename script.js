@@ -1,28 +1,1031 @@
-const DB="moneysave_db", STORE="transactions";let db, type="expense";
-const $=id=>document.getElementById(id);
-$("date").value=new Date().toISOString().slice(0,10);
+let db;
+let items = [];
 
-function openDB(){return new Promise((res,rej)=>{let r=indexedDB.open(DB,1);r.onupgradeneeded=()=>{let d=r.result;if(!d.objectStoreNames.contains(STORE)){let s=d.createObjectStore(STORE,{keyPath:"id",autoIncrement:true});s.createIndex("date","date")}};r.onsuccess=()=>{db=r.result;res()};r.onerror=()=>rej(r.error)})}
-function all(){return new Promise((res,rej)=>{let q=db.transaction(STORE,"readonly").objectStore(STORE).getAll();q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})}
-function add(x){return new Promise((res,rej)=>{let q=db.transaction(STORE,"readwrite").objectStore(STORE).add(x);q.onsuccess=res;q.onerror=()=>rej(q.error)})}
-function remove(id){return new Promise((res,rej)=>{let q=db.transaction(STORE,"readwrite").objectStore(STORE).delete(id);q.onsuccess=res;q.onerror=()=>rej(q.error)})}
-function clear(){return new Promise((res,rej)=>{let q=db.transaction(STORE,"readwrite").objectStore(STORE).clear();q.onsuccess=res;q.onerror=()=>rej(q.error)})}
-const money=n=>"₹"+Number(n).toLocaleString("en-IN",{maximumFractionDigits:2});
-function toast(t){let x=document.createElement("div");x.className="toast";x.textContent=t;document.body.appendChild(x);setTimeout(()=>x.remove(),1800)}
-async function render(){
- let d=await all();d.sort((a,b)=>b.date.localeCompare(a.date)||b.id-a.id);
- let inc=d.filter(x=>x.type==="income").reduce((s,x)=>s+x.amount,0),exp=d.filter(x=>x.type==="expense").reduce((s,x)=>s+x.amount,0);
- $("balance").textContent=money(inc-exp);$("incomeTotal").textContent=money(inc);$("expenseTotal").textContent=money(exp);
- let now=new Date(),month=now.toISOString().slice(0,7),weekStart=new Date(now);weekStart.setDate(now.getDate()-6);
- let mi=d.filter(x=>x.date.slice(0,7)===month), mw=d.filter(x=>new Date(x.date+"T23:59:59")>=weekStart);
- let mExp=mi.filter(x=>x.type==="expense").reduce((s,x)=>s+x.amount,0),wExp=mw.filter(x=>x.type==="expense").reduce((s,x)=>s+x.amount,0);
- $("month").textContent=money(mExp);$("week").textContent=money(wExp);$("monthLabel").textContent=now.toLocaleString("en-IN",{month:"long",year:"numeric"});
- $("list").innerHTML=d.length?d.map(x=>`<div class="item"><div class="dot">${x.type==="income"?"💵":"🧾"}</div><div class="info"><b>${escapeHtml(x.note||x.category)}</b><small>${x.date} · ${escapeHtml(x.category)}</small></div><div class="money" style="color:${x.type==="income"?"#63e6be":"#ff7b91"}">${x.type==="income"?"+":"-"}${money(x.amount)}</div><button class="del" onclick="delTx(${x.id})">×</button></div>`).join(""):'<div class="empty">No transactions yet.</div>';
+let type = "income";
+let sumType = "daily";
+
+const DB = "moneysave_db";
+const STORE = "transactions";
+
+
+function getToday() {
+
+  return new Date()
+    .toISOString()
+    .slice(0, 10);
+
 }
-function escapeHtml(s){return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
-async function delTx(id){if(confirm("Delete this transaction?")){await remove(id);render();toast("Deleted")}}
-document.querySelectorAll(".type").forEach(b=>b.onclick=()=>{document.querySelectorAll(".type").forEach(x=>x.classList.remove("active"));b.classList.add("active");type=b.dataset.type});
-$("addBtn").onclick=async()=>{let amount=parseFloat($("amount").value),date=$("date").value;if(!amount||amount<=0)return toast("Enter a valid amount");if(!date)return toast("Select date");await add({amount,date,type,category:$("category").value,note:$("note").value.trim()});$("amount").value="";$("note").value="";render();toast("Saved on this iPhone ✓")};
-$("clearBtn").onclick=async()=>{if(confirm("Delete all transactions?")){await clear();render();toast("All data cleared")}};
-$("themeBtn").onclick=()=>{document.body.classList.toggle("light");$("themeBtn").textContent=document.body.classList.contains("light")?"🌙":"☀️"};
-openDB().then(render);
+
+
+document.getElementById("date").value =
+  getToday();
+
+document.getElementById("selected").value =
+  getToday();
+
+
+/* DATABASE */
+
+let request =
+  indexedDB.open(DB, 1);
+
+
+request.onupgradeneeded =
+  function(event) {
+
+    db = event.target.result;
+
+    if (!db.objectStoreNames.contains(STORE)) {
+
+      db.createObjectStore(
+        STORE,
+        {
+          keyPath: "id",
+          autoIncrement: true
+        }
+      );
+
+    }
+
+  };
+
+
+request.onsuccess =
+  function(event) {
+
+    db = event.target.result;
+
+    loadData();
+
+  };
+
+
+/* LOAD DATA */
+
+function loadData() {
+
+  let transaction =
+    db.transaction(
+      STORE,
+      "readonly"
+    );
+
+  let store =
+    transaction.objectStore(STORE);
+
+  let req =
+    store.getAll();
+
+
+  req.onsuccess =
+    function() {
+
+      items =
+        req.result || [];
+
+      render();
+
+    };
+
+}
+
+
+/* INCOME / EXPENSE */
+
+function setType(newType) {
+
+  type = newType;
+
+  document
+    .getElementById("inTab")
+    .classList
+    .toggle(
+      "active",
+      type === "income"
+    );
+
+  document
+    .getElementById("exTab")
+    .classList
+    .toggle(
+      "active",
+      type === "expense"
+    );
+
+}
+
+
+/* ADD */
+
+function add() {
+
+  let amountValue =
+    Number(
+      document
+        .getElementById("amount")
+        .value
+    );
+
+
+  if (
+    !amountValue ||
+    amountValue <= 0
+  ) {
+
+    alert(
+      "Enter a valid amount"
+    );
+
+    return;
+
+  }
+
+
+  let item = {
+
+    amount: amountValue,
+
+    date:
+      document
+        .getElementById("date")
+        .value ||
+      getToday(),
+
+    type: type,
+
+    category:
+      document
+        .getElementById("cat")
+        .value,
+
+    note:
+      document
+        .getElementById("note")
+        .value
+
+  };
+
+
+  let transaction =
+    db.transaction(
+      STORE,
+      "readwrite"
+    );
+
+
+  let store =
+    transaction.objectStore(STORE);
+
+
+  store.add(item);
+
+
+  transaction.oncomplete =
+    function() {
+
+      document
+        .getElementById("amount")
+        .value = "";
+
+      document
+        .getElementById("note")
+        .value = "";
+
+      loadData();
+
+    };
+
+}
+
+
+/* DELETE */
+
+function del(id) {
+
+  let transaction =
+    db.transaction(
+      STORE,
+      "readwrite"
+    );
+
+
+  transaction
+    .objectStore(STORE)
+    .delete(id);
+
+
+  transaction.oncomplete =
+    function() {
+
+      loadData();
+
+    };
+
+}
+
+
+/* CLEAR */
+
+function clearAll() {
+
+  if (!items.length) {
+
+    alert(
+      "No transactions"
+    );
+
+    return;
+
+  }
+
+
+  if (
+    confirm(
+      "Delete all transactions?"
+    )
+  ) {
+
+    let transaction =
+      db.transaction(
+        STORE,
+        "readwrite"
+      );
+
+
+    transaction
+      .objectStore(STORE)
+      .clear();
+
+
+    transaction.oncomplete =
+      function() {
+
+        loadData();
+
+      };
+
+  }
+
+}
+
+
+/* MONEY */
+
+function money(value) {
+
+  return "₹" +
+    Number(value || 0)
+      .toLocaleString(
+        "en-IN",
+        {
+          maximumFractionDigits: 2
+        }
+      );
+
+}
+
+
+/* TOTAL */
+
+function total(
+  list,
+  transactionType
+) {
+
+  return list
+
+    .filter(
+      item =>
+        item.type === transactionType
+    )
+
+    .reduce(
+      (sum, item) =>
+        sum +
+        Number(item.amount),
+      0
+    );
+
+}
+
+
+/* DATE LIST */
+
+function dateList(date) {
+
+  return items.filter(
+    item =>
+      item.date === date
+  );
+
+}
+
+
+/* STATS */
+
+function stats(list) {
+
+  let income =
+    total(list, "income");
+
+  let expense =
+    total(list, "expense");
+
+  let saving =
+    income - expense;
+
+
+  return `
+
+    <div class="mini">
+
+      <div>
+        <small>Income</small>
+        <br>
+        <b class="plus">
+          ${money(income)}
+        </b>
+      </div>
+
+      <div>
+        <small>Expense</small>
+        <br>
+        <b class="minus">
+          ${money(expense)}
+        </b>
+      </div>
+
+      <div>
+        <small>Saving</small>
+        <br>
+        <b>
+          ${money(saving)}
+        </b>
+      </div>
+
+    </div>
+
+  `;
+
+}
+
+
+/* TRANSACTION HTML */
+
+function transactionHTML(list) {
+
+  if (!list.length) {
+
+    return `
+      <div class="empty">
+        No transactions found.
+      </div>
+    `;
+
+  }
+
+
+  return list
+
+    .slice()
+
+    .sort(
+      (a, b) =>
+        b.date.localeCompare(a.date)
+    )
+
+    .map(item => {
+
+      let sign =
+        item.type === "income"
+          ? "+"
+          : "-";
+
+      let color =
+        item.type === "income"
+          ? "plus"
+          : "minus";
+
+
+      return `
+
+        <div class="tx">
+
+          <div>
+
+            <b>
+              ${escapeHTML(
+                item.category ||
+                "Other"
+              )}
+            </b>
+
+            <div class="meta">
+
+              ${item.date}
+
+              ${
+                item.note
+                  ? " • " +
+                    escapeHTML(
+                      item.note
+                    )
+                  : ""
+              }
+
+            </div>
+
+          </div>
+
+
+          <div class="${color}">
+
+            ${sign}${money(item.amount)}
+
+            <button
+              class="del"
+              onclick="del(${item.id})">
+              ×
+            </button>
+
+          </div>
+
+        </div>
+
+      `;
+
+    })
+
+    .join("");
+
+}
+
+
+/* MAIN RENDER */
+
+function render() {
+
+  let income =
+    total(items, "income");
+
+  let expense =
+    total(items, "expense");
+
+
+  let selectedDate =
+    document
+      .getElementById("selected")
+      .value ||
+    getToday();
+
+
+  let selectedItems =
+    dateList(selectedDate);
+
+
+  document
+    .getElementById("income")
+    .textContent =
+    money(income);
+
+
+  document
+    .getElementById("expense")
+    .textContent =
+    money(expense);
+
+
+  document
+    .getElementById("net")
+    .textContent =
+    money(
+      income - expense
+    );
+
+
+  let dailyIncome =
+    total(
+      selectedItems,
+      "income"
+    );
+
+
+  let dailyExpense =
+    total(
+      selectedItems,
+      "expense"
+    );
+
+
+  document
+    .getElementById("saving")
+    .textContent =
+    money(
+      dailyIncome -
+      dailyExpense
+    );
+
+
+  document
+    .getElementById("todayLabel")
+    .textContent =
+    selectedDate === getToday()
+      ? "Today"
+      : selectedDate;
+
+
+  document
+    .getElementById("dayStats")
+    .innerHTML =
+    stats(selectedItems);
+
+
+  document
+    .getElementById("dayTx")
+    .innerHTML =
+    transactionHTML(
+      selectedItems
+    );
+
+
+  document
+    .getElementById("all")
+    .innerHTML =
+    transactionHTML(items);
+
+
+  renderSummary();
+
+}
+
+
+/* SUMMARY */
+
+function summary(
+  summaryType,
+  button
+) {
+
+  sumType =
+    summaryType;
+
+
+  let buttons =
+    button
+      .parentElement
+      .querySelectorAll(
+        "button"
+      );
+
+
+  buttons.forEach(
+    item =>
+      item.classList
+        .remove("active")
+  );
+
+
+  button.classList
+    .add("active");
+
+
+  renderSummary();
+
+}
+
+
+/* WEEK */
+
+function getWeekRange() {
+
+  let today =
+    new Date();
+
+
+  let day =
+    today.getDay() || 7;
+
+
+  let start =
+    new Date(today);
+
+
+  start.setDate(
+    today.getDate() -
+    day +
+    1
+  );
+
+
+  let end =
+    new Date(start);
+
+
+  end.setDate(
+    start.getDate() +
+    6
+  );
+
+
+  return {
+
+    start:
+      start
+        .toISOString()
+        .slice(0, 10),
+
+    end:
+      end
+        .toISOString()
+        .slice(0, 10)
+
+  };
+
+}
+
+
+/* SUMMARY RENDER */
+
+function renderSummary() {
+
+  let list = [];
+
+  let title = "";
+
+
+  if (
+    sumType === "daily"
+  ) {
+
+    let date =
+      document
+        .getElementById("selected")
+        .value ||
+      getToday();
+
+
+    list =
+      dateList(date);
+
+
+    title =
+      "Daily Summary • " +
+      date;
+
+  }
+
+
+  if (
+    sumType === "weekly"
+  ) {
+
+    let range =
+      getWeekRange();
+
+
+    list =
+      items.filter(
+        item =>
+          item.date >=
+            range.start &&
+          item.date <=
+            range.end
+      );
+
+
+    title =
+      "Weekly Summary • " +
+      range.start +
+      " to " +
+      range.end;
+
+  }
+
+
+  if (
+    sumType === "monthly"
+  ) {
+
+    let selected =
+      document
+        .getElementById("selected")
+        .value ||
+      getToday();
+
+
+    let month =
+      selected.slice(0, 7);
+
+
+    list =
+      items.filter(
+        item =>
+          item.date
+            .startsWith(month)
+      );
+
+
+    title =
+      "Monthly Summary • " +
+      month;
+
+  }
+
+
+  let categoryTotals = {};
+
+
+  list
+
+    .filter(
+      item =>
+        item.type === "expense"
+    )
+
+    .forEach(item => {
+
+      let category =
+        item.category ||
+        "Other";
+
+
+      categoryTotals[category] =
+        (
+          categoryTotals[category] ||
+          0
+        ) +
+        Number(item.amount);
+
+    });
+
+
+  let categoryHTML =
+
+    Object.entries(
+      categoryTotals
+    )
+
+    .sort(
+      (a, b) =>
+        b[1] - a[1]
+    )
+
+    .map(
+      ([category, amount]) => `
+
+        <div class="cat">
+
+          <span>
+            💸
+            ${escapeHTML(category)}
+          </span>
+
+          <b>
+            ${money(amount)}
+          </b>
+
+        </div>
+
+      `
+    )
+
+    .join("");
+
+
+  document
+    .getElementById("summary")
+    .innerHTML = `
+
+      <div class="summarybox">
+
+        <b>
+          ${title}
+        </b>
+
+        ${stats(list)}
+
+        <h3>
+          Expense by Category
+        </h3>
+
+        ${
+          categoryHTML ||
+          `
+            <div class="empty">
+              No expense data.
+            </div>
+          `
+        }
+
+      </div>
+
+    `;
+
+}
+
+
+/* DASHBOARD CARD */
+
+function metric(typeName) {
+
+  let selectedDate =
+    document
+      .getElementById("selected")
+      .value ||
+    getToday();
+
+
+  let list =
+    typeName === "saving"
+      ? dateList(selectedDate)
+      : items;
+
+
+  let income =
+    total(list, "income");
+
+
+  let expense =
+    total(list, "expense");
+
+
+  let value;
+
+
+  if (
+    typeName === "income"
+  ) {
+
+    value = income;
+
+  }
+
+  else if (
+    typeName === "expense"
+  ) {
+
+    value = expense;
+
+  }
+
+  else {
+
+    value =
+      income - expense;
+
+  }
+
+
+  let title;
+
+
+  if (
+    typeName === "balance"
+  ) {
+
+    title =
+      "💰 Net Balance Summary";
+
+  }
+
+  else if (
+    typeName === "income"
+  ) {
+
+    title =
+      "📈 Income Summary";
+
+  }
+
+  else if (
+    typeName === "expense"
+  ) {
+
+    title =
+      "💸 Expense Summary";
+
+  }
+
+  else {
+
+    title =
+      "🏦 Daily Savings";
+
+  }
+
+
+  document
+    .getElementById("mt")
+    .textContent =
+    title;
+
+
+  document
+    .getElementById("mc")
+    .innerHTML = `
+
+      <div class="summarybox">
+
+        <div
+          style="
+            text-align:center;
+            font-size:30px;
+            padding:15px;
+          "
+        >
+
+          <b>
+            ${money(value)}
+          </b>
+
+        </div>
+
+        ${stats(list)}
+
+        ${transactionHTML(list)}
+
+      </div>
+
+    `;
+
+
+  document
+    .getElementById("modal")
+    .classList
+    .remove("hide");
+
+}
+
+
+/* CLOSE MODAL */
+
+function closeM() {
+
+  document
+    .getElementById("modal")
+    .classList
+    .add("hide");
+
+}
+
+
+/* THEME */
+
+function theme() {
+
+  document.body
+    .classList
+    .toggle("light");
+
+
+  localStorage.setItem(
+
+    "moneyTheme",
+
+    document.body
+      .classList
+      .contains("light")
+      ? "light"
+      : "dark"
+
+  );
+
+}
+
+
+if (
+  localStorage.getItem(
+    "moneyTheme"
+  ) === "light"
+) {
+
+  document.body
+    .classList
+    .add("light");
+
+}
+
+
+/* SECURITY */
+
+function escapeHTML(value) {
+
+  return String(value)
+    .replace(
+      /[&<>"']/g,
+      function(char) {
+
+        return {
+
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+          "'": "&#039;"
+
+        }[char];
+
+      }
+    );
+
+}
