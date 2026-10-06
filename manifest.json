@@ -3,6 +3,8 @@
   "short_name": "MoneySave",
   "start_url": "./",
   "display": "standalone",
-  "background_color": "#0b1020",
-  "theme_color": "#111827"
+  "background_color": "#08030f",
+  "theme_color": "#7c3aed",
+  "description": "Personal Income, Expense and Daily Savings Manager",
+  "icons": []
 }
