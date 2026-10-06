@@ -1,67 +1,244 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html>
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="MoneySave">
-<meta name="theme-color" content="#090014">
 <link rel="manifest" href="manifest.json">
-<title>MoneySave — Expense Tracker</title>
+
+<title>MoneySave</title>
+
 <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
-<div class="app">
-  <header>
-    <div>
-      <div class="eyebrow">PERSONAL FINANCE</div>
-      <h1>Money<span>Save</span> 💰</h1>
-      <p>Simple money tracking made for your iPhone.</p>
-    </div>
-    <button id="themeBtn" class="iconBtn" aria-label="Toggle theme">☀️</button>
-  </header>
 
-  <section class="cards">
-    <div class="card balance"><small>NET BALANCE</small><strong id="balance">₹0</strong></div>
-    <div class="card income"><small>INCOME</small><strong id="incomeTotal">₹0</strong></div>
-    <div class="card expense"><small>EXPENSE</small><strong id="expenseTotal">₹0</strong></div>
-  </section>
+<main>
 
-  <section class="panel">
-    <h2>Add Transaction</h2>
-    <div class="seg">
-      <button class="type active" data-type="expense">Expense</button>
-      <button class="type" data-type="income">Income</button>
-    </div>
-    <input id="amount" type="number" inputmode="decimal" placeholder="Amount ₹">
-    <div class="grid">
-      <input id="date" type="date">
-      <select id="category">
-        <option>Food</option><option>Travel</option><option>Shopping</option>
-        <option>Bills</option><option>Education</option><option>Health</option>
-        <option>Salary</option><option>Other</option>
-      </select>
-    </div>
-    <input id="note" maxlength="60" placeholder="Note (optional)">
-    <button id="addBtn" class="primary">＋ Add Transaction</button>
-  </section>
+<header>
+  <div>
+    <small>PERSONAL MONEY MANAGER</small>
+    <h1>💰 MoneySave</h1>
+    <p>Income • Expense • Daily Savings</p>
+  </div>
 
-  <section class="panel">
-    <div class="row"><h2>Summary</h2><span id="monthLabel"></span></div>
-    <div class="mini">
-      <div><span>This Week</span><b id="week">₹0</b></div>
-      <div><span>This Month</span><b id="month">₹0</b></div>
-    </div>
-  </section>
+  <button onclick="theme()">☀️</button>
+</header>
 
-  <section class="panel">
-    <div class="row"><h2>Transactions</h2><button id="clearBtn" class="dangerText">Clear all</button></div>
-    <div id="list" class="list"><div class="empty">No transactions yet.</div></div>
-  </section>
 
-  <div class="tip">🔒 Your data stays on this iPhone/browser. No account or laptop required.</div>
+<!-- DASHBOARD CARDS -->
+
+<section class="cards">
+
+  <button onclick="metric('balance')">
+    <span>💰 Net Balance</span>
+    <b id="net">₹0</b>
+    <i>Tap for summary</i>
+  </button>
+
+  <button onclick="metric('income')">
+    <span>📈 Income</span>
+    <b id="income">₹0</b>
+    <i>Tap for details</i>
+  </button>
+
+  <button onclick="metric('expense')">
+    <span>💸 Expense</span>
+    <b id="expense">₹0</b>
+    <i>Tap for details</i>
+  </button>
+
+  <button onclick="metric('saving')">
+    <span>🏦 Daily Savings</span>
+    <b id="saving">₹0</b>
+    <i id="todayLabel">Today</i>
+  </button>
+
+</section>
+
+
+<!-- ADD TRANSACTION -->
+
+<section>
+
+<h2>➕ Add Transaction</h2>
+
+<div class="tabs">
+
+<button id="inTab"
+class="active"
+onclick="setType('income')">
+Income
+</button>
+
+<button id="exTab"
+onclick="setType('expense')">
+Expense
+</button>
+
 </div>
+
+
+<div class="grid">
+
+<label>
+Amount
+<input
+id="amount"
+type="number"
+inputmode="decimal"
+placeholder="₹ 0">
+</label>
+
+
+<label>
+Date
+<input
+id="date"
+type="date">
+</label>
+
+
+<label>
+Category
+
+<select id="cat">
+
+<option>Salary</option>
+<option>Swiggy</option>
+<option>Food</option>
+<option>Travel</option>
+<option>Shopping</option>
+<option>Bills</option>
+<option>Education</option>
+<option>Bike</option>
+<option>Savings</option>
+<option>Other</option>
+
+</select>
+
+</label>
+
+
+<label>
+Note
+
+<input
+id="note"
+placeholder="Optional">
+
+</label>
+
+</div>
+
+
+<button
+class="add"
+onclick="add()">
+Add Transaction
+</button>
+
+</section>
+
+
+<!-- DATE DETAILS -->
+
+<section>
+
+<h2>📅 Date Details</h2>
+
+<input
+id="selected"
+type="date"
+onchange="render()">
+
+<div id="dayStats"></div>
+
+<div id="dayTx"></div>
+
+</section>
+
+
+<!-- SUMMARY -->
+
+<section>
+
+<h2>📊 Summaries</h2>
+
+<div class="tabs">
+
+<button
+class="active"
+onclick="summary('daily',this)">
+Daily
+</button>
+
+<button
+onclick="summary('weekly',this)">
+Weekly
+</button>
+
+<button
+onclick="summary('monthly',this)">
+Monthly
+</button>
+
+</div>
+
+
+<div id="summary"></div>
+
+</section>
+
+
+<!-- ALL TRANSACTIONS -->
+
+<section>
+
+<div class="head">
+
+<h2>🧾 All Transactions</h2>
+
+<button
+class="clear"
+onclick="clearAll()">
+Clear All
+</button>
+
+</div>
+
+<div id="all"></div>
+
+</section>
+
+</main>
+
+
+<!-- DETAILS POPUP -->
+
+<div
+id="modal"
+class="modal"
+onclick="if(event.target===this)closeM()">
+
+<div class="box">
+
+<div class="head">
+
+<h2 id="mt"></h2>
+
+<button onclick="closeM()">×</button>
+
+</div>
+
+<div id="mc"></div>
+
+</div>
+
+</div>
+
+
 <script src="script.js"></script>
+
 </body>
 </html>
